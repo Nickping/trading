@@ -1,3 +1,41 @@
 # 보안 설정 파일
 env/secrets.py
 
+
+# Python 캐시 파일
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+
+
+# VSCode 설정
+.vscode/
+
+# macOS 파일
+.DS_Store
+
+# PyCharm
+.idea/
+
+# 로그/결과 파일
+*.log
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# pipenv / poetry
+Pipfile.lock
+poetry.lock
+
+# pytest 캐시
+.cache/
+
+# mypy/mypy_cache
+.mypy_cache/
+
+# coverage
+htmlcov/
+.coverage
+coverage.xml
