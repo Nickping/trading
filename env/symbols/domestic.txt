@@ -1,0 +1,14 @@
+ [
+  { "name": "삼성전자", "symbol": "005930" },
+  { "name": "카카오뱅크", "symbol": "323410" },
+  { "name": "네이버", "symbol": "035420" },
+  { "name": "카카오", "symbol": "035720" },
+  { "name": "SK이노베이션", "symbol": "096770" },
+  { "name": "SK텔레콤", "symbol": "017670" },
+  { "name": "SK하이닉스", "symbol": "000660" },
+  { "name": "삼성전자(우)", "symbol": "005935" },
+  { "name": "두산에너빌러티", "symbol": "034020" },
+  { "name": "삼성중공업", "symbol": "010140" },
+  { "name": "현대차", "symbol": "005380" },
+  { "name": "HD Energy solution", "symbol": "322000" }
+]

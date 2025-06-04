@@ -1,0 +1,15 @@
+[
+  { "name": "테슬라", "symbol": "TSLA" },
+  { "name": "엔비디아", "symbol": "NVDA" },
+  { "name": "QQQ", "symbol": "QQQ" },
+  { "name": "SPY", "symbol": "SPY" },
+  { "name": "팔란티어", "symbol": "PLTR" },
+  { "name": "애플", "symbol": "AAPL" },
+  { "name": "알파벳A", "symbol": "GOOGL" },
+  { "name": "코카콜라", "symbol": "KO" },
+  { "name": "마이크로소프트", "symbol": "MSFT" },
+  { "name": "메타", "symbol": "META" },
+  { "name": "월마트", "symbol": "WMT" },
+  { "name": "엑슨모빌", "symbol": "XOM" },  
+  { "name": "아마존", "symbol": "AMZN"}
+]

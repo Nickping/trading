@@ -50,14 +50,14 @@ def analyze_foreign_stock(name: str, symbol: str):
                 row["rsi"] < 35
             ):
                 results.append(
-                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f}")
+                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {code}")
             elif (
                 row["prev_close"] > row["prev_upper"] and
                 row["close"] < row["upper"] and
                 row["rsi"] > 65
             ):
                 results.append(
-                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f}")
+                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {code}")
         except:
             continue
 

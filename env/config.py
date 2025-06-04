@@ -31,7 +31,7 @@ FOREIGN_STOCKS = [
 ]
 
 
-def get_domestic_params(code: str, start_date="20250101"):
+def get_domestic_params(code: str, start_date="20240101"):
     return {
         "fid_cond_mrkt_div_code": "J",
         "fid_input_iscd": code,
@@ -43,7 +43,7 @@ def get_domestic_params(code: str, start_date="20250101"):
     }
 
 
-def get_foreign_params(symbol: str, start_date="20250101"):
+def get_foreign_params(symbol: str, start_date="20240101"):
     return {
         "FID_COND_MRKT_DIV_CODE": "N",
         "FID_INPUT_ISCD": symbol,
