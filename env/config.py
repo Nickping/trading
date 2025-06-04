@@ -1,5 +1,5 @@
 from datetime import datetime
-from env.secrets import TOKEN, APP_SECRET, APP_KEY
+from env.secrets import get_token, APP_SECRET, APP_KEY
 
 DOMESTIC_STOCKS = {
     "삼성전자": "005930",
@@ -55,7 +55,7 @@ def get_foreign_params(symbol: str, start_date="20240101"):
 
 def get_default_headers():
     return {
-        "authorization": TOKEN,
+        "authorization": get_token(),
         "appkey": APP_KEY,
         "appsecret": APP_SECRET
     }

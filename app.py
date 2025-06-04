@@ -2,7 +2,6 @@ from datetime import datetime
 from analyze.analyze_domestic import analyze_domestic_stock
 from analyze.analyze_foreign import analyze_foreign_stock
 from env.config import DOMESTIC_STOCKS, FOREIGN_STOCKS
-# from notification.telegram import send_telegram_message
 from network.broadcast import send_email
 from network.broadcast import send_telegram_message
 from env.secrets import EMAIL_CONFIG
@@ -24,13 +23,13 @@ def main():
     summarize = [f"⚡️요약 정보\n"]
     has_summary = False
 
-    for stock in DOMESTIC_STOCKS:
-        result = analyze_domestic_stock(
-            stock["name"], stock["symbol"]) + "\n\n"
-        matched = contains_today_alert(summarize, today, result)
-        has_summary = has_summary or matched
-        messages.append(result)
-        print(result)
+    # for stock in DOMESTIC_STOCKS:
+    #     result = analyze_domestic_stock(
+    #         stock["name"], stock["symbol"]) + "\n\n"
+    #     matched = contains_today_alert(summarize, today, result)
+    #     has_summary = has_summary or matched
+    #     messages.append(result)
+    #     print(result)
 
     for stock in FOREIGN_STOCKS:
         result = analyze_foreign_stock(stock["name"], stock["symbol"]) + "\n\n"
@@ -46,18 +45,18 @@ def main():
     full_report = "\n".join(summarize) + "\n\n" + "\n".join(messages)
     print(full_report)
 
-    if has_summary:
-        # 이메일 전송
-        send_email(
-            subject=f"[MCP 알림] {timestamp} 전략 점검 결과",
-            body=full_report,
-            sender=EMAIL_CONFIG["sender"],
-            recipient=EMAIL_CONFIG["recipient"],
-            smtp_server=EMAIL_CONFIG["smtp_server"],
-            smtp_port=EMAIL_CONFIG["smtp_port"],
-            smtp_user=EMAIL_CONFIG["smtp_user"],
-            smtp_password=EMAIL_CONFIG["smtp_password"]
-        )
+    # if has_summary:
+    # 이메일 전송
+    send_email(
+        subject=f"[MCP 알림] {timestamp} 전략 점검 결과",
+        body=full_report,
+        sender=EMAIL_CONFIG["sender"],
+        recipient=EMAIL_CONFIG["recipient"],
+        smtp_server=EMAIL_CONFIG["smtp_server"],
+        smtp_port=EMAIL_CONFIG["smtp_port"],
+        smtp_user=EMAIL_CONFIG["smtp_user"],
+        smtp_password=EMAIL_CONFIG["smtp_password"]
+    )
 
     send_telegram_message(full_report)
 

@@ -8,16 +8,21 @@ from network.request import request_with_logging
 from env.config import get_foreign_params
 from env.config import get_default_headers
 from analyze.analyze_core import calculate_rsi, calculate_bollinger_bands
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def analyze_foreign_stock(name: str, symbol: str):
     url = FOREIGN_DAILY_ENDPOINT
     params = get_foreign_params(symbol)
+
     headers = get_default_headers()
+    print(f"❤️ before header {headers}")
     headers["tr_id"] = TrID.FOREIGN.value
 
     data = request_with_logging(
         url=url, method="GET", params=params, headers=headers)
+    print(f"❤️ after header {headers}")
     candles = data.get("output2", [])
 
     if len(candles) < 21:
@@ -50,14 +55,14 @@ def analyze_foreign_stock(name: str, symbol: str):
                 row["rsi"] < 35
             ):
                 results.append(
-                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {code}")
+                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {symbol}")
             elif (
                 row["prev_close"] > row["prev_upper"] and
                 row["close"] < row["upper"] and
                 row["rsi"] > 65
             ):
                 results.append(
-                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {code}")
+                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {symbol}")
         except:
             continue
 
