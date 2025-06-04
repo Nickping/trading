@@ -7,12 +7,12 @@ from env.tr_id import TrID
 from network.request import request_with_logging
 from env.config import get_foreign_params
 from env.config import get_default_headers
-from analyze.analyze_core import calculate_rsi, calculate_bollinger_bands
+from analyze.analyze_core import calculate_rsi, calculate_bollinger_bands, calculate_stoch_rsi
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def analyze_foreign_stock(name: str, symbol: str):
+def analyze_foreign_stock_for_closed(name: str, symbol: str):
     url = FOREIGN_DAILY_ENDPOINT
     params = get_foreign_params(symbol)
 
@@ -63,6 +63,66 @@ def analyze_foreign_stock(name: str, symbol: str):
             ):
                 results.append(
                     f"🔴 매도 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {symbol}")
+        except:
+            continue
+
+    if not results:
+        return f"📊 {name} ({symbol})\n⚪ 전략 조건 만족일 없음"
+    return f"📊 {name} ({symbol})\n" + "\n".join(results)
+
+
+# Stochastic RSI 사용
+def analyze_foreign_stock_for_opened(name: str, symbol: str):
+    url = FOREIGN_DAILY_ENDPOINT
+    params = get_foreign_params(symbol)
+
+    headers = get_default_headers()
+    print(f"❤️ before header {headers}")
+    headers["tr_id"] = TrID.FOREIGN.value
+
+    data = request_with_logging(
+        url=url, method="GET", params=params, headers=headers)
+    print(f"❤️ after header {headers}")
+    candles = data.get("output2", [])
+
+    if len(candles) < 21:
+        return f"{name} 📉 일봉 데이터 부족 ({len(candles)}개)"
+
+    df = pd.DataFrame(candles)
+    df = df.sort_values("stck_bsop_date")
+    df["close"] = df["ovrs_nmix_prpr"].astype(float)
+    df["date"] = pd.to_datetime(df["stck_bsop_date"])
+
+    close = df["close"]
+    stoch_rsi = calculate_stoch_rsi(close)
+    sma, upper, lower = calculate_bollinger_bands(close)
+
+    df = df.iloc[-len(stoch_rsi):].copy()
+    df["stoch_rsi"] = stoch_rsi.values
+    df["upper"] = upper.values
+    df["lower"] = lower.values
+    df["prev_close"] = df["close"].shift(1)
+    df["prev_upper"] = df["upper"].shift(1)
+    df["prev_lower"] = df["lower"].shift(1)
+
+    results = []
+    for _, row in df.iterrows():
+        date = row["date"].date()
+        try:
+            if (
+                row["prev_close"] < row["prev_lower"] and
+                row["close"] > row["lower"] and
+                row["stoch_rsi"] < 0.3
+            ):
+                results.append(
+                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']:.2f} | StochRSI: {row['stoch_rsi']:.2f} {name} {symbol}")
+            elif (
+                row["prev_close"] > row["prev_upper"] and
+                row["close"] < row["upper"] and
+                row["stoch_rsi"] > 0.7
+            ):
+                results.append(
+                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']:.2f} | StochRSI: {row['stoch_rsi']:.2f} {name} {symbol}")
         except:
             continue
 

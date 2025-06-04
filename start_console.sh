@@ -1,4 +1,3 @@
-#!/bin/bash
 
 # 🔍 1. 현재 실행 중인 app.py 프로세스 찾기
 pids=$(pgrep -f "app.py")
@@ -17,6 +16,4 @@ fi
 
 # ▶️ 2. app.py 재실행
 echo "🚀 app.py 재실행 중..."
-# nohup python3 app.py > app.log 2>&1 &
-new_pid=$!
-echo "✅ 실행됨 (PID: $new_pid)"
+exec python3 app.py

@@ -1,7 +1,8 @@
 from datetime import datetime
-from analyze.analyze_domestic import analyze_domestic_stock
-from analyze.analyze_foreign import analyze_foreign_stock
+from analyze.analyze_domestic import analyze_domestic_stock_for_closed, analyze_domestic_stock_for_opened
+from analyze.analyze_foreign import analyze_foreign_stock_for_closed, analyze_foreign_stock_for_opened
 from env.config import DOMESTIC_STOCKS, FOREIGN_STOCKS
+from utils.open_check import is_domestic_open, is_foreign_open
 from network.broadcast import send_email
 from network.broadcast import send_telegram_message
 from env.secrets import EMAIL_CONFIG
@@ -11,7 +12,6 @@ import time
 import re
 
 
-# 종목 로딩
 def main():
     DOMESTIC_STOCKS = load_domestic_stocks()
     FOREIGN_STOCKS = load_foreign_stocks()
@@ -19,20 +19,33 @@ def main():
     today = datetime.now().strftime("%Y-%m-%d")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     messages = [f"⏰ [MCP 알림] {timestamp} 기준 전략 점검 결과\n"]
-
     summarize = [f"⚡️요약 정보\n"]
     has_summary = False
 
-    # for stock in DOMESTIC_STOCKS:
-    #     result = analyze_domestic_stock(
-    #         stock["name"], stock["symbol"]) + "\n\n"
-    #     matched = contains_today_alert(summarize, today, result)
-    #     has_summary = has_summary or matched
-    #     messages.append(result)
-    #     print(result)
+    is_dom_open = is_domestic_open()
+    is_for_open = is_foreign_open()
+
+    for stock in DOMESTIC_STOCKS:
+        if is_dom_open:
+            result = analyze_domestic_stock_for_opened(
+                stock["name"], stock["symbol"])
+        else:
+            result = analyze_domestic_stock_for_closed(
+                stock["name"], stock["symbol"])
+        result += "\n\n"
+        matched = contains_today_alert(summarize, today, result)
+        has_summary = has_summary or matched
+        messages.append(result)
+        print(result)
 
     for stock in FOREIGN_STOCKS:
-        result = analyze_foreign_stock(stock["name"], stock["symbol"]) + "\n\n"
+        if is_for_open:
+            result = analyze_foreign_stock_for_opened(
+                stock["name"], stock["symbol"])
+        else:
+            result = analyze_foreign_stock_for_closed(
+                stock["name"], stock["symbol"])
+        result += "\n\n"
         matched = contains_today_alert(summarize, today, result)
         has_summary = has_summary or matched
         messages.append(result)
@@ -41,12 +54,9 @@ def main():
     if not has_summary:
         summarize.append("💬 현재 감지된 종목이 없습니다. ")
 
-    # 결과 종합
     full_report = "\n".join(summarize) + "\n\n" + "\n".join(messages)
     print(full_report)
 
-    # if has_summary:
-    # 이메일 전송
     send_email(
         subject=f"[MCP 알림] {timestamp} 전략 점검 결과",
         body=full_report,
