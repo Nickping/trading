@@ -15,7 +15,7 @@ from datetime import datetime
 
 
 # 하루 전 기준으로 하기때문에 과거 이력 보긴 좋음..
-def calculate_rsi(close_prices, period=14):
+def calculate_rsi(close_prices, period=14, shift=False):
     delta = close_prices.diff()
 
     gain = np.where(delta > 0, delta, 0)
@@ -31,12 +31,14 @@ def calculate_rsi(close_prices, period=14):
     rsi = 100 - (100 / (1 + rs))
 
     # 핵심: 전날까지의 RSI로 정렬 (현재날짜에는 아직 반영되지 않은 값)
-    rsi = rsi.shift(1)
+    if shift:
+        rsi = rsi.shift(1)
 
     return rsi
 
-
 # Stochastic RSI. 0.2 < 과매도, 0.8 > 과매수
+
+
 def calculate_stoch_rsi(close_prices: pd.Series, rsi_period: int = 14, stoch_period: int = 14) -> pd.Series:
     # Step 1: RSI 계산 (shift 없이 실시간 대응)
     delta = close_prices.diff()

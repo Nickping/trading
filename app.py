@@ -1,6 +1,6 @@
 from datetime import datetime
 from analyze.analyze_domestic import analyze_domestic_stock_for_closed, analyze_domestic_stock_for_opened
-from analyze.analyze_foreign import analyze_foreign_stock_for_closed, analyze_foreign_stock_for_opened
+from analyze.analyze_foreign import analyze_foreign_stock_for_closed, analyze_foreign_stock_for_opened, analyze_foreign_stock_for_opened_within_60min_RSI
 from env.config import DOMESTIC_STOCKS, FOREIGN_STOCKS
 from utils.open_check import is_domestic_open, is_foreign_open
 from network.broadcast import send_email
@@ -40,8 +40,8 @@ def main():
 
     for stock in FOREIGN_STOCKS:
         if is_for_open:
-            result = analyze_foreign_stock_for_opened(
-                stock["name"], stock["symbol"])
+            result = analyze_foreign_stock_for_opened_within_60min_RSI(
+                stock["name"], stock["symbol"], stock["excd"])
         else:
             result = analyze_foreign_stock_for_closed(
                 stock["name"], stock["symbol"])
@@ -57,27 +57,27 @@ def main():
     full_report = "\n".join(summarize) + "\n\n" + "\n".join(messages)
     print(full_report)
 
-    send_email(
-        subject=f"[MCP 알림] {timestamp} 전략 점검 결과",
-        body=full_report,
-        sender=EMAIL_CONFIG["sender"],
-        recipient=EMAIL_CONFIG["recipient"],
-        smtp_server=EMAIL_CONFIG["smtp_server"],
-        smtp_port=EMAIL_CONFIG["smtp_port"],
-        smtp_user=EMAIL_CONFIG["smtp_user"],
-        smtp_password=EMAIL_CONFIG["smtp_password"]
-    )
-
-    send_telegram_message(full_report)
+    if has_summary:
+        send_email(
+            subject=f"[MCP 알림] {timestamp} 전략 점검 결과",
+            body=full_report,
+            sender=EMAIL_CONFIG["sender"],
+            recipient=EMAIL_CONFIG["recipient"],
+            smtp_server=EMAIL_CONFIG["smtp_server"],
+            smtp_port=EMAIL_CONFIG["smtp_port"],
+            smtp_user=EMAIL_CONFIG["smtp_user"],
+            smtp_password=EMAIL_CONFIG["smtp_password"]
+        )
+        send_telegram_message(full_report)
 
 
 def contains_today_alert(summaries, today, text):
-    pattern = rf"(🟢 매수 조건 만족|🔴 매도 조건 만족): {today} \| 종가: ([0-9.]+) \| RSI: ([0-9.]+)"
+    # 날짜는 today와 일치하는지 확인, 시간은 무시
+    pattern = rf"(🟢 매수 조건 만족|🔴 매도 조건 만족): {today} \d{{2}}:\d{{2}} \| 종가: ([0-9.]+) \| RSI: ([0-9.]+)"
     match = re.search(pattern, text)
     if match:
         summaries.append(match.group(0))
         return True
-
     return False
 
 

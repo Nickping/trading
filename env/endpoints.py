@@ -5,5 +5,8 @@ DOMESTIC_DAILY_ENDPOINT = BASE_URL + \
 FOREIGN_DAILY_ENDPOINT = BASE_URL + \
     "/uapi/overseas-price/v1/quotations/inquire-daily-chartprice"
 
+FOREIGN_TIME_ITEM_CHART_PRICE = BASE_URL + \
+    "/uapi/overseas-price/v1/quotations/inquire-time-itemchartprice"
+
 ACCESS_TOKEN_UPDATE = BASE_URL + \
     "/oauth2/tokenP"

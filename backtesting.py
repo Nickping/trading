@@ -22,7 +22,9 @@ DOMESTIC_STOCKS = [
     {"name": "두산에너빌러티", "symbol": "034020"},
     {"name": "삼성중공업", "symbol": "010140"},
     {"name": "현대차", "symbol": "005380"},
-    {"name": "HD Energy solution", "symbol": "322000"}
+    {"name": "HD Energy solution", "symbol": "322000"},
+    {"name": "카카오페이", "symbol": "377300"},
+    {"name": "한화 에어로스페이스", "symbol": "012450"}
 ]
 
 FOREIGN_STOCKS = [
@@ -236,7 +238,7 @@ def main():
         code = code.strip(")")
 
         today = datetime.now().strftime("%Y%m%d")
-        start = "20250101"
+        start = "20240101"
 
         if market == "국내":
             df = get_domestic_chart(
