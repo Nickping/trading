@@ -28,23 +28,57 @@ DOMESTIC_STOCKS = [
 ]
 
 FOREIGN_STOCKS = [
-    {"name": "테슬라", "symbol": "TSLA"},
-    {"name": "엔비디아", "symbol": "NVDA"},
-    {"name": "QQQ", "symbol": "QQQ"},
-    {"name": "SPY", "symbol": "SPY"},
-    {"name": "팔란티어", "symbol": "PLTR"},
-    {"name": "애플", "symbol": "AAPL"},
-    {"name": "알파벳A", "symbol": "GOOGL"},
-    {"name": "코카콜라", "symbol": "KO"},
-    {"name": "마이크로소프트", "symbol": "MSFT"},
-    {"name": "메타", "symbol": "META"},
-    {"name": "월마트", "symbol": "WMT"},
-    {"name": "엑슨모빌", "symbol": "XOM"},
-    {"name": "아마존", "symbol": "AMZN"}
+    {"name": "테슬라", "symbol": "TSLA", "excd": "NAS"},
+    {"name": "엔비디아", "symbol": "NVDA", "excd": "NAS"},
+    {"name": "QQQ", "symbol": "QQQ", "excd": "NAS"},
+    {"name": "SPY", "symbol": "SPY", "excd": "NYS"},
+    {"name": "팔란티어", "symbol": "PLTR", "excd": "NAS"},
+    {"name": "애플", "symbol": "AAPL", "excd": "NAS"},
+    {"name": "알파벳A", "symbol": "GOOGL", "excd": "NAS"},
+    {"name": "코카콜라", "symbol": "KO", "excd": "NYS"},
+    {"name": "마이크로소프트", "symbol": "MSFT", "excd": "NAS"},
+    {"name": "메타", "symbol": "META", "excd": "NAS"},
+    {"name": "월마트", "symbol": "WMT", "excd": "NYS"},
+    {"name": "엑슨모빌", "symbol": "XOM", "excd": "NYS"},
+    {"name": "아마존", "symbol": "AMZN", "excd": "NAS"}
 ]
 
 
-def get_foreign_chart(symbol, start, end, token, appkey, appsecret):
+def get_foreign_60min_chart_open(symbol, excd, token, appkey, appsecret, nrec=120):
+    url = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/inquire-time-itemchartprice"
+    headers = {
+        "authorization": token,
+        "appkey": appkey,
+        "appsecret": appsecret,
+        "tr_id": "HHDFS76950200"
+    }
+
+    params = {
+        "AUTH": "",
+        "EXCD": excd,            # EXCD: "NAS", "NYS"
+        "SYMB": symbol,
+        "NMIN": "60",            # 60분봉
+        "PINC": "1",             # 정방향
+        "NEXT": "",
+        "NREC": str(nrec),       # 최대 120봉
+        "FILL": "",
+        "KEYB": ""
+    }
+
+    res = requests.get(url, headers=headers, params=params)
+    res_json = res.json()
+
+    output2 = res_json.get("output2", [])
+    if not output2:
+        raise ValueError("❌ 해외 종목의 60분봉 데이터가 없습니다.")
+
+    df = pd.DataFrame(output2)
+    df["date"] = pd.to_datetime(df["tymd"] + df["xhms"], format="%Y%m%d%H%M%S")
+    df["close"] = df["last"].astype(float)
+    return df.sort_values("date")
+
+
+def get_foreign_char_closedt(symbol, start, end, token, appkey, appsecret):
     url = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/inquire-daily-chartprice"
     headers = {
         "authorization": get_token(),
@@ -226,7 +260,7 @@ def plot_strategy(df, name):
 
 
 def main():
-    st.title("📊 장 마감 기준 백테스트 (국내/해외)")
+    st.title("📊 60분봉 RSI 전략 백테스트 (국내/해외)")
     market = st.radio("시장 선택", ["국내", "해외"])
 
     stock_list = DOMESTIC_STOCKS if market == "국내" else FOREIGN_STOCKS
@@ -240,18 +274,30 @@ def main():
         today = datetime.now().strftime("%Y%m%d")
         start = "20240101"
 
+        token = get_token()
+
         if market == "국내":
             df = get_domestic_chart(
-                code, start, today, get_token(), APP_KEY, APP_SECRET)
+                code, start, today, token, APP_KEY, APP_SECRET
+            )
         else:
-            df = get_foreign_chart(
-                code, start, today, get_token(), APP_KEY, APP_SECRET)
+            # 📌 종목 리스트에서 EXCD 추출
+            symbol_info = next(
+                (s for s in FOREIGN_STOCKS if s["symbol"] == code), None)
+            if not symbol_info:
+                st.error("❌ 종목 정보 오류")
+                return
+            excd = symbol_info.get("excd", "NAS")
+
+            df = get_foreign_60min_chart_open(
+                code, excd, token, APP_KEY, APP_SECRET
+            )
 
         df["date"] = pd.to_datetime(df["date"])
         df = df.sort_values("date").reset_index(drop=True)
 
-        df = compute_indicators(df)
-        plot_strategy(df, name)
+        df = compute_indicators(df)  # 예: RSI, 볼린저밴드 등 추가
+        plot_strategy(df, name)      # 예: 매수/매도 조건 시각화
 
 
 if __name__ == "__main__":

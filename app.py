@@ -84,8 +84,8 @@ def contains_today_alert(summaries, today, text):
 # 최초 실행
 main()
 
-# 60분마다 반복
-schedule.every(60).minutes.do(main)
+# 30분마다 반복
+schedule.every(30).minutes.do(main)
 
 # 루프 실행
 while True:

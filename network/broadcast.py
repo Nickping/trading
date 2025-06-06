@@ -9,10 +9,17 @@ import smtplib
 
 
 def send_email(subject, body, sender, recipient, smtp_server, smtp_port, smtp_user, smtp_password):
-    msg = MIMEText(body, "plain", "utf-8")
-    msg['Subject'] = Header(subject, "utf-8")
-    msg['From'] = sender
-    msg['To'] = recipient
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    import smtplib
+
+    msg = MIMEMultipart()
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = ", ".join(recipient) if isinstance(
+        recipient, list) else recipient
+
+    msg.attach(MIMEText(body, "plain"))
 
     with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
         server.login(smtp_user, smtp_password)
