@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from analyze.analyze_domestic import analyze_domestic_stock_for_closed, analyze_domestic_stock_for_opened
 from analyze.analyze_foreign import analyze_foreign_stock_for_closed, analyze_foreign_stock_for_opened, analyze_foreign_stock_for_opened_within_60min_RSI
 from env.config import DOMESTIC_STOCKS, FOREIGN_STOCKS
@@ -7,6 +7,7 @@ from network.broadcast import send_email
 from network.broadcast import send_telegram_message
 from env.secrets import EMAIL_CONFIG
 from env.load_local import load_domestic_stocks, load_foreign_stocks
+import re
 import schedule
 import time
 import re
@@ -72,11 +73,18 @@ def main():
 
 
 def contains_today_alert(summaries, today, text):
-    # 날짜는 today와 일치하는지 확인, 시간은 무시
-    pattern = rf"(🟢 매수 조건 만족|🔴 매도 조건 만족): {today} \d{{2}}:\d{{2}} \| 종가: ([0-9.]+) \| RSI: ([0-9.]+)"
-    match = re.search(pattern, text)
+    # 어제 날짜도 포함
+    yesterday = (datetime.strptime(today, "%Y-%m-%d") -
+                 timedelta(days=1)).strftime("%Y-%m-%d")
+
+    pattern_open = rf"(🟢 매수 조건 만족|🔴 매도 조건 만족): ({today}|{yesterday}) \d{{2}}:\d{{2}} \| 종가: ([0-9.]+) \| RSI: ([0-9.]+)"
+    pattern_closed = rf"(🟢 매수 조건 만족|🔴 매도 조건 만족): ({today}|{yesterday}) \| 종가: ([0-9.]+) \| RSI: ([0-9.]+)"
+    match = re.search(pattern_open, text) or re.search(pattern_closed, text)
     if match:
-        summaries.append(match.group(0))
+        # 종목명과 심볼은 텍스트 마지막 단어 2개라고 가정
+        parts = text.strip().split()
+        stock_info = " ".join(parts[-2:])  # 예: "카카오페이 377300"
+        summaries.append(f"{stock_info}: {match.group(0)}")
         return True
     return False
 
@@ -85,7 +93,7 @@ def contains_today_alert(summaries, today, text):
 main()
 
 # 30분마다 반복
-schedule.every(30).minutes.do(main)
+schedule.every(60).minutes.do(main)
 
 # 루프 실행
 while True:

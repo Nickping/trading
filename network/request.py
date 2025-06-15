@@ -21,10 +21,10 @@ def request_with_logging(url, method="GET", headers=None, params=None, body=None
     # 500 에러 시 토큰 재발급 후 한 번 재시도
     if res.status_code == 500:
         print("⚠️ 500 오류 발생 → 토큰 갱신 시도")
-        TOKEN = refresh_token()
-        print(f"신규 발급 토큰 : {TOKEN}")
+        token = refresh_token()
+        print(f"신규 발급 토큰 : {token}")
         if headers and "authorization" in headers:
-            headers["authorization"] = TOKEN
+            headers["authorization"] = token
         res = make_request(url, method, headers, params, body)
         print(f"📡 재요청 URL: {res.request.url}")
         print(f"📬 재요청 응답 코드: {res.status_code}")
