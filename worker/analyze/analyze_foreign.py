@@ -13,6 +13,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def analyze_foreign_stock_for_closed(name: str, symbol: str):
+    results = []
     url = FOREIGN_DAILY_ENDPOINT
     params = get_foreign_params(symbol)
 
@@ -26,7 +27,12 @@ def analyze_foreign_stock_for_closed(name: str, symbol: str):
     candles = data.get("output2", [])
 
     if len(candles) < 21:
-        return f"{name} 📉 일봉 데이터 부족 ({len(candles)}개)"
+        return results.append({
+            "name": name,
+            "code": symbol,
+            "error": "60분봉 데이터 부족"
+        })
+
 
     df = pd.DataFrame(candles)
     df = df.sort_values("stck_bsop_date")
@@ -45,34 +51,50 @@ def analyze_foreign_stock_for_closed(name: str, symbol: str):
     df["prev_upper"] = df["upper"].shift(1)
     df["prev_lower"] = df["lower"].shift(1)
 
-    results = []
+    
     for _, row in df.iterrows():
         date = row["date"].date()
         try:
-            if (
+            is_buy_condition = (
                 row["prev_close"] < row["prev_lower"] and
                 row["close"] > row["lower"] and
                 row["rsi"] < 35
-            ):
-                results.append(
-                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {symbol}")
-            elif (
+            )
+        
+            is_sell_condition = (
                 row["prev_close"] > row["prev_upper"] and
                 row["close"] < row["upper"] and
                 row["rsi"] > 65
-            ):
-                results.append(
-                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {symbol}")
+            )
+            
+            if is_buy_condition:
+                results.append({
+                    "name": name,
+                    "code": symbol,
+                    "date": date,
+                    "type": "buy",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["rsi"], 2)
+                })
+
+            elif is_sell_condition:
+                results.append({
+                    "name": name,
+                    "code": symbol,
+                    "date": date,
+                    "type": "sell",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["rsi"], 2)
+                })
+
         except:
             continue
-
-    if not results:
-        return f"📊 {name} ({symbol})\n⚪ 전략 조건 만족일 없음"
-    return f"📊 {name} ({symbol})\n" + "\n".join(results)
+        return results
 
 
 # Stochastic RSI 사용
 def analyze_foreign_stock_for_opened(name: str, symbol: str):
+    results = []
     url = FOREIGN_DAILY_ENDPOINT
     params = get_foreign_params(symbol)
 
@@ -84,7 +106,11 @@ def analyze_foreign_stock_for_opened(name: str, symbol: str):
     candles = data.get("output2", [])
 
     if len(candles) < 21:
-        return f"{name} 📉 일봉 데이터 부족 ({len(candles)}개)"
+        return [{
+            "name": name,
+            "code": symbol,
+            "error": "60분봉 데이터 부족"
+        }]
 
     df = pd.DataFrame(candles)
     df = df.sort_values("stck_bsop_date")
@@ -102,35 +128,53 @@ def analyze_foreign_stock_for_opened(name: str, symbol: str):
     df["prev_close"] = df["close"].shift(1)
     df["prev_upper"] = df["upper"].shift(1)
     df["prev_lower"] = df["lower"].shift(1)
-
-    results = []
+    
     for _, row in df.iterrows():
         date = row["date"].date()
         try:
-            if (
+            is_buy_condition = (
                 row["prev_close"] < row["prev_lower"] and
                 row["close"] > row["lower"] and
                 row["stoch_rsi"] < 0.3
-            ):
-                results.append(
-                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']:.2f} | StochRSI: {row['stoch_rsi']:.2f} {name} {symbol}")
-            elif (
+            )
+        
+            is_sell_condition = (
                 row["prev_close"] > row["prev_upper"] and
                 row["close"] < row["upper"] and
                 row["stoch_rsi"] > 0.7
-            ):
-                results.append(
-                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']:.2f} | StochRSI: {row['stoch_rsi']:.2f} {name} {symbol}")
+            )
+            
+            # print(f"analyze_foreign_stock_for_opened is_buy_condition: {is_buy_condition}, is_sell_condition: {is_sell_condition}")
+            
+            if is_buy_condition:
+                results.append({
+                    "name": name,
+                    "code": symbol,
+                    "date": date,
+                    "type": "buy",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["stoch_rsi"], 2)
+                })
+
+            elif is_sell_condition:
+                results.append({
+                    "name": name,
+                    "code": symbol,
+                    "date": date,
+                    "type": "sell",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["stoch_rsi"], 2)
+                })
+
         except:
             continue
-
-    if not results:
-        return f"📊 {name} ({symbol})\n⚪ 전략 조건 만족일 없음"
-    return f"📊 {name} ({symbol})\n" + "\n".join(results)
+    cleaned_results = [group for group in results if group is not None]
+    return cleaned_results
 
 
 # 60 분봉, RSI 사용
 def analyze_foreign_stock_for_opened_within_60min_RSI(name: str, symbol: str, excd="NAS"):
+    results = []
     url = FOREIGN_TIME_ITEM_CHART_PRICE
     params = {
         "AUTH": "",
@@ -152,7 +196,12 @@ def analyze_foreign_stock_for_opened_within_60min_RSI(name: str, symbol: str, ex
     candles = data.get("output2", [])
 
     if len(candles) < 21:
-        return f"{name} 📉 60분봉 데이터 부족 ({len(candles)}개)"
+        return [{
+            "name": name,
+            "code": symbol,
+            "error": "60분봉 데이터 부족"
+        }]
+
 
     df = pd.DataFrame(candles)
     df = df.sort_values(["tymd", "xhms"])
@@ -172,27 +221,48 @@ def analyze_foreign_stock_for_opened_within_60min_RSI(name: str, symbol: str, ex
     df["prev_upper"] = df["upper"].shift(1)
     df["prev_lower"] = df["lower"].shift(1)
 
+
     results = []
     for _, row in df.iterrows():
         date = row["date"].strftime("%Y-%m-%d %H:%M")
+
         try:
-            if (
+            is_buy_condition = (
                 row["prev_close"] < row["prev_lower"] and
                 row["close"] > row["lower"] and
-                row["rsi"] < 40
-            ):
-                results.append(
-                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {symbol}")
-            elif (
+                row["rsi"] < 35
+            )
+        
+            is_sell_condition = (
                 row["prev_close"] > row["prev_upper"] and
                 row["close"] < row["upper"] and
-                row["rsi"] > 6
-            ):
-                results.append(
-                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']:.2f} | RSI: {row['rsi']:.2f} {name} {symbol}")
+                row["rsi"] > 65
+            )
+            
+            # print(f"analyze_foreign_stock_for_opened_within_60min_RSI is_buy_condition: {is_buy_condition}, is_sell_condition: {is_sell_condition}")
+            
+            if is_buy_condition:
+                results.append({
+                    "name": name,
+                    "code": symbol,
+                    "date": date,
+                    "type": "buy",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["rsi"], 2)
+                })
+
+            elif is_sell_condition:
+                results.append({
+                    "name": name,
+                    "code": symbol,
+                    "date": date,
+                    "type": "sell",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["rsi"], 2)
+                })
+
         except:
             continue
+    cleaned_results = [group for group in results if group is not None]
+    return cleaned_results
 
-    if not results:
-        return f"📊 {name} ({symbol})\n⚪ 전략 조건 만족일 없음"
-    return f"📊 {name} ({symbol})\n" + "\n".join(results)

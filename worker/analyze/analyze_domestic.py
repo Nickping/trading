@@ -10,6 +10,7 @@ from analyze.analyze_core import calculate_rsi, calculate_bollinger_bands, calcu
 
 
 def analyze_domestic_stock_for_closed(name: str, code: str):
+    results = []
     url = DOMESTIC_DAILY_ENDPOINT
     params = get_domestic_params(code)
     headers = get_default_headers()
@@ -20,7 +21,12 @@ def analyze_domestic_stock_for_closed(name: str, code: str):
     candles = data.get("output2", [])
 
     if len(candles) < 21:
-        return f"{name} 📉 일봉 데이터 부족 ({len(candles)}개)"
+        return results.append({
+            "name": name,
+            "code": code,
+            "error": "60분봉 데이터 부족"
+        })
+
 
     df = pd.DataFrame(candles)
     df = df.sort_values("stck_bsop_date")
@@ -38,34 +44,51 @@ def analyze_domestic_stock_for_closed(name: str, code: str):
     df["prev_upper"] = df["upper"].shift(1)
     df["prev_lower"] = df["lower"].shift(1)
 
-    results = []
+    
     for _, row in df.iterrows():
         date = datetime.strptime(row["stck_bsop_date"], "%Y%m%d").date()
+        
+        is_buy_condition = (
+            row["prev_close"] < row["prev_lower"] and
+            row["close"] > row["lower"] and
+            row["rsi"] < 35
+        )
+        
+        is_sell_condition = (
+            row["prev_close"] > row["prev_upper"] and
+            row["close"] < row["upper"] and
+            row["rsi"] > 65
+        )
+        
         try:
-            if (
-                row["prev_close"] < row["prev_lower"] and
-                row["close"] > row["lower"] and
-                row["rsi"] < 35
-            ):
-                results.append(
-                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']} | RSI: {row['rsi']:.2f} {name} {code}")
-            elif (
-                row["prev_close"] > row["prev_upper"] and
-                row["close"] < row["upper"] and
-                row["rsi"] > 65
-            ):
-                results.append(
-                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']} | RSI: {row['rsi']:.2f} {name} {code}")
+            if is_buy_condition:
+                results.append({
+                    "name": name,
+                    "code": code,
+                    "date": date,
+                    "type": "buy",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["rsi"], 2)
+                })
+
+            elif is_sell_condition:
+                results.append({
+                    "name": name,
+                    "code": code,
+                    "date": date,
+                    "type": "sell",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["rsi"], 2)
+                })
         except:
             continue
 
-    if not results:
-        return f"📊 {name} ({code})\n⚪ 2025년 이후 전략 조건 만족일 없음"
-    return f"📊 {name} ({code})\n" + "\n".join(results)
+    return results
 
 
 # Stochastic RSI 사용
 def analyze_domestic_stock_for_opened(name: str, code: str):
+    results = []
     url = DOMESTIC_DAILY_ENDPOINT
     params = get_domestic_params(code)
     headers = get_default_headers()
@@ -76,7 +99,12 @@ def analyze_domestic_stock_for_opened(name: str, code: str):
     candles = data.get("output2", [])
 
     if len(candles) < 21:
-        return f"{name} 📉 일봉 데이터 부족 ({len(candles)}개)"
+        return results.append({
+            "name": name,
+            "code": code,
+            "error": "60분봉 데이터 부족"
+        })
+
 
     df = pd.DataFrame(candles)
     df = df.sort_values("stck_bsop_date")
@@ -94,27 +122,41 @@ def analyze_domestic_stock_for_opened(name: str, code: str):
     df["prev_upper"] = df["upper"].shift(1)
     df["prev_lower"] = df["lower"].shift(1)
 
-    results = []
+    
     for _, row in df.iterrows():
         date = datetime.strptime(row["stck_bsop_date"], "%Y%m%d").date()
         try:
-            if (
+            is_buy_condition = (
                 row["prev_close"] < row["prev_lower"] and
                 row["close"] > row["lower"] and
                 row["stoch_rsi"] < 0.3
-            ):
-                results.append(
-                    f"🟢 매수 조건 만족: {date} | 종가: {row['close']} | StochRSI: {row['stoch_rsi']:.2f} {name} {code}")
-            elif (
+            )
+        
+            is_sell_condition = (
                 row["prev_close"] > row["prev_upper"] and
                 row["close"] < row["upper"] and
                 row["stoch_rsi"] > 0.7
-            ):
-                results.append(
-                    f"🔴 매도 조건 만족: {date} | 종가: {row['close']} | StochRSI: {row['stoch_rsi']:.2f} {name} {code}")
+            )
+            if is_buy_condition:
+                results.append({
+                    "name": name,
+                    "code": code,
+                    "date": date,
+                    "type": "buy",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["stoch_rsi"], 2)
+                })
+                
+            elif is_sell_condition:
+                results.append({
+                    "name": name,
+                    "code": code,
+                    "date": date,
+                    "type": "sell",
+                    "close": round(row["close"], 2),
+                    "rsi": round(row["stoch_rsi"], 2)
+                })
+
         except:
             continue
-
-    if not results:
-        return f"📊 {name} ({code})\n⚪ 2025년 이후 전략 조건 만족일 없음"
-    return f"📊 {name} ({code})\n" + "\n".join(results)
+    return results
