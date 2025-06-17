@@ -6,6 +6,9 @@ import requests
 from datetime import datetime
 # from analyze.analyze_domestic import get_domestic_chart_data
 from env.secrets import APP_SECRET, APP_KEY, get_token
+from analyze.analyze_domestic import analyze_domestic_stock_for_closed, analyze_domestic_stock_for_opened
+from analyze.analyze_foreign import analyze_foreign_stock_for_closed, analyze_foreign_stock_for_opened, analyze_foreign_stock_for_opened_within_60min_RSI
+
 
 # ✅ 해외 주식 차트 데이터 함수
 
@@ -260,8 +263,11 @@ def plot_strategy(df, name):
 
 
 def main():
-    st.title("📊 60분봉 RSI 전략 백테스트 (국내/해외)")
-    market = st.radio("시장 선택", ["국내", "해외"])
+    st.title("📊 RSI 전략 기반 백테스트 리포트 (국내/해외 + 장중/장외)")
+
+    market = st.radio("시장 선택", ["국내", "해외"], horizontal=True)
+    session = st.radio("시간 구분", ["장중", "장외"], horizontal=True)
+    is_dom_open = session == "장중"
 
     stock_list = DOMESTIC_STOCKS if market == "국내" else FOREIGN_STOCKS
     stock_options = [f"{s['name']} ({s['symbol']})" for s in stock_list]
@@ -270,35 +276,89 @@ def main():
     if st.button("✅ 실행"):
         name, code = selected.split(" (")
         code = code.strip(")")
-
         today = datetime.now().strftime("%Y%m%d")
         start = "20240101"
-
         token = get_token()
 
-        if market == "국내":
-            df = get_domestic_chart(
-                code, start, today, token, APP_KEY, APP_SECRET
-            )
-        else:
-            # 📌 종목 리스트에서 EXCD 추출
-            symbol_info = next(
-                (s for s in FOREIGN_STOCKS if s["symbol"] == code), None)
-            if not symbol_info:
-                st.error("❌ 종목 정보 오류")
+        try:
+            if market == "국내":
+                if is_dom_open:
+                    results = analyze_domestic_stock_for_opened(name, code)
+                else:
+                    results = analyze_domestic_stock_for_closed(name, code)
+                df = get_domestic_chart(code, start, today, token, APP_KEY, APP_SECRET)
+
+            else:
+                symbol_info = next((s for s in FOREIGN_STOCKS if s["symbol"] == code), None)
+                if not symbol_info:
+                    st.error("❌ 종목 정보 오류")
+                    return
+                excd = symbol_info.get("excd", "NAS")
+                if is_dom_open:
+                    results = analyze_foreign_stock_for_opened_within_60min_RSI(name, code, excd)
+                    df = get_foreign_60min_chart_open(code, excd, token, APP_KEY, APP_SECRET)
+                else:
+                    results = analyze_foreign_stock_for_closed(name, code, excd)
+                    df = get_foreign_char_closedt(code, start, today, token, APP_KEY, APP_SECRET)
+
+            if not results:
+                st.info("🔍 조건에 맞는 매매 시그널이 없습니다.")
                 return
-            excd = symbol_info.get("excd", "NAS")
 
-            df = get_foreign_60min_chart_open(
-                code, excd, token, APP_KEY, APP_SECRET
-            )
+            st.markdown("### 📋 전략 시그널")
+            st.dataframe(pd.DataFrame(results))
 
-        df["date"] = pd.to_datetime(df["date"])
-        df = df.sort_values("date").reset_index(drop=True)
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.sort_values("date").reset_index(drop=True)
+            df = compute_indicators(df)
 
-        df = compute_indicators(df)  # 예: RSI, 볼린저밴드 등 추가
-        plot_strategy(df, name)      # 예: 매수/매도 조건 시각화
+            # 👉 시그널 기반으로 수익률 계산 및 시각화
+            plot_strategy(df, name)
 
+        except Exception as e:
+            st.error(f"❌ 분석 중 오류 발생: {e}")
+# def main():
+#     st.title("📊 RSI 전략 기반 분석 리포트 (국내/해외 + 장중/장외)")
+    
+#     market = st.radio("시장 선택", ["국내", "해외"], horizontal=True)
+#     session = st.radio("시간 구분", ["장중", "장외"], horizontal=True)
+#     is_dom_open = session == "장중"
 
-if __name__ == "__main__":
-    main()
+#     # 종목 선택
+#     stock_list = DOMESTIC_STOCKS if market == "국내" else FOREIGN_STOCKS
+#     stock_options = [f"{s['name']} ({s['symbol']})" for s in stock_list]
+#     selected = st.selectbox("분석할 종목 선택", options=stock_options)
+
+#     if st.button("✅ 실행"):
+#         name, code = selected.split(" (")
+#         code = code.strip(")")
+
+#         try:
+#             if market == "국내":
+#                 if is_dom_open:
+#                     results = analyze_domestic_stock_for_opened(name, code)
+#                 else:
+#                     results = analyze_domestic_stock_for_closed(name, code)
+#             else:
+#                 symbol_info = next((s for s in FOREIGN_STOCKS if s["symbol"] == code), None)
+#                 if not symbol_info:
+#                     st.error("❌ 종목 정보 오류")
+#                     return
+#                 excd = symbol_info.get("excd", "NAS")
+#                 if is_dom_open:
+#                     results = analyze_foreign_stock_for_opened_within_60min_RSI(name, code, excd)
+#                 else:
+#                     results = analyze_foreign_stock_for_closed(name, code, excd)  # 함수 존재해야 함
+
+#             st.markdown("### 📋 분석 결과")
+#             if results:
+#                 df = pd.DataFrame(results)
+#                 st.dataframe(df)
+#             else:
+#                 st.info("🔍 조건에 맞는 매매 시그널이 없습니다.")
+
+#         except Exception as e:
+#             st.error(f"❌ 분석 중 오류 발생: {e}")
+
+# if __name__ == "__main__":
+#     main()

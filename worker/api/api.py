@@ -5,15 +5,15 @@ from analyze.analyze_domestic import analyze_domestic_stock_for_closed, analyze_
 from analyze.analyze_foreign import analyze_foreign_stock_for_closed, analyze_foreign_stock_for_opened, analyze_foreign_stock_for_opened_within_60min_RSI
 
 
-def runDomestic():
+def runDomestic(is_open: bool):
     DOMESTIC_STOCKS = load_domestic_stocks()
     result = []
     today = datetime.now().strftime("%Y-%m-%d")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-    is_dom_open = is_domestic_open()    
+    # is_dom_open = is_domestic_open()    
 
     for stock in DOMESTIC_STOCKS:
-        if is_dom_open:
+        if is_open:
             result.append(analyze_domestic_stock_for_opened(
                 stock["name"], stock["symbol"]))
         else:
@@ -30,16 +30,16 @@ def runDomestic():
         "past_5days_sell": past_5days_sell # 지난 5일 매도
     }
 
-def runForeign():
+def runForeign(is_open: bool):
     FOREIGN_STOCKS = load_foreign_stocks()
     result = []
 
     today = datetime.now().strftime("%Y-%m-%d")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")    
-    is_for_open = is_foreign_open()
+    # is_for_open = is_foreign_open()
     
     for stock in FOREIGN_STOCKS:
-        if is_for_open:
+        if is_open:
             result.append(analyze_foreign_stock_for_opened_within_60min_RSI(
                 stock["name"], stock["symbol"], stock["excd"]))
         else:

@@ -43,6 +43,8 @@ def analyze_domestic_stock_for_closed(name: str, code: str):
     df["prev_close"] = df["close"].shift(1)
     df["prev_upper"] = df["upper"].shift(1)
     df["prev_lower"] = df["lower"].shift(1)
+    
+    print(f"df : {df}")
 
     
     for _, row in df.iterrows():
@@ -83,7 +85,9 @@ def analyze_domestic_stock_for_closed(name: str, code: str):
         except:
             continue
 
-    return results
+    cleaned_results = [group for group in results if group is not None]
+    print(f"results : {results}")
+    return cleaned_results
 
 
 # Stochastic RSI 사용
@@ -122,6 +126,7 @@ def analyze_domestic_stock_for_opened(name: str, code: str):
     df["prev_upper"] = df["upper"].shift(1)
     df["prev_lower"] = df["lower"].shift(1)
 
+    print(f"df : {df}")
     
     for _, row in df.iterrows():
         date = datetime.strptime(row["stck_bsop_date"], "%Y%m%d").date()
@@ -159,4 +164,7 @@ def analyze_domestic_stock_for_opened(name: str, code: str):
 
         except:
             continue
-    return results
+    print(f"results : {results}")
+    cleaned_results = [group for group in results if group is not None]
+    
+    return cleaned_results

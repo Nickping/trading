@@ -19,15 +19,16 @@ app = Flask(__name__)
 
 @app.route("/run_domestic", methods=["POST"])
 def run_domestic():
-    data = request.json
-    result = runDomestic()
+    data = request.json or {}
+    is_open = data.get("is_open", False)  # 기본값: 장외
+    result = runDomestic(is_open=is_open)
     return jsonify({"result": result})
-
 
 @app.route("/run_foreign", methods=["POST"])
 def run_foreign():
-    data = request.json
-    result = runForeign()
+    data = request.json or {}
+    is_open = data.get("is_open", False)  # 기본값: 장외
+    result = runForeign(is_open=is_open)
     return jsonify({"result": result})
 
 

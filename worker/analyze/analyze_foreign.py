@@ -18,12 +18,10 @@ def analyze_foreign_stock_for_closed(name: str, symbol: str):
     params = get_foreign_params(symbol)
 
     headers = get_default_headers()
-    print(f"❤️ before header {headers}")
     headers["tr_id"] = TrID.FOREIGN.value
 
     data = request_with_logging(
         url=url, method="GET", params=params, headers=headers)
-    print(f"❤️ after header {headers}")
     candles = data.get("output2", [])
 
     if len(candles) < 21:
@@ -38,6 +36,8 @@ def analyze_foreign_stock_for_closed(name: str, symbol: str):
     df = df.sort_values("stck_bsop_date")
     df["close"] = df["ovrs_nmix_prpr"].astype(float)
     df["date"] = pd.to_datetime(df["stck_bsop_date"])
+    
+    print(f"df : {df}")
 
     close = df["close"]
     rsi = calculate_rsi(close, shift=True)
@@ -89,8 +89,8 @@ def analyze_foreign_stock_for_closed(name: str, symbol: str):
 
         except:
             continue
-        return results
-
+    print(f"result: {results}")
+    return results
 
 # Stochastic RSI 사용
 def analyze_foreign_stock_for_opened(name: str, symbol: str):
@@ -221,6 +221,10 @@ def analyze_foreign_stock_for_opened_within_60min_RSI(name: str, symbol: str, ex
     df["prev_upper"] = df["upper"].shift(1)
     df["prev_lower"] = df["lower"].shift(1)
 
+
+    print(f"df : {df}")
+
+    
 
     results = []
     for _, row in df.iterrows():
