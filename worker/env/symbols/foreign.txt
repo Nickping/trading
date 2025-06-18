@@ -11,5 +11,8 @@
   { "name": "메타", "symbol": "META", "excd": "NAS" },
   { "name": "월마트", "symbol": "WMT", "excd": "NYS" },
   { "name": "엑슨모빌", "symbol": "XOM", "excd": "NYS" },
-  { "name": "아마존", "symbol": "AMZN", "excd": "NAS" }
+  { "name": "아마존", "symbol": "AMZN", "excd": "NAS" },
+  { "name": "아마존", "symbol": "AMZN", "excd": "NAS" },
+  { "name": "일라이 릴리", "symbol": "LLY", "excd": "NYS" },
+  { "name": "ARK Genomic", "symbol": "ARKG", "excd": "NYS" }
 ]
